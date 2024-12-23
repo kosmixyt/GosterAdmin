@@ -1,10 +1,12 @@
 import React from "react";
 import { Link, Outlet } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 
 export function Layout() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
   return (
     <div>
+      <ToastContainer />
       <div className="navbar bg-base-100">
         <div className="flex-none">
           <button
@@ -27,8 +29,11 @@ export function Layout() {
           </button>
         </div>
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl">Setttings</a>
+          <a href="/" className="btn btn-ghost text-xl">
+            Goster
+          </a>
         </div>
+
         <div className="flex-none">
           <ul className="menu menu-horizontal px-1">
             <li>
@@ -69,6 +74,18 @@ export function Layout() {
             </li>
             <li className="mt-1">
               <Link to="/metadata">Metadata</Link>
+            </li>
+            <li className="mt-1">
+              <Link to="/files">Files</Link>
+            </li>
+            <li className="mt-1">
+              <Link to="/transcoder">Transcoder</Link>
+            </li>
+            <li className="mt-1">
+              <Link to="/scan">Scan Paths</Link>
+            </li>
+            <li className="mt-1">
+              <Link to="/torrents">Torrents</Link>
             </li>
           </ul>
         </div>

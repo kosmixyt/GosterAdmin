@@ -1,11 +1,48 @@
 import { BsLink45Deg } from "react-icons/bs";
 import profile from "../assets/img/profile.png";
+import { useEffect, useState } from "react";
+import { app_url } from "../main";
+import { bytesToSize } from "./files/files";
+
+declare interface AdminInfoData {
+  goroutines: number;
+  totalmemory: number;
+  currentTranscode: number;
+  movies: number;
+  series: number;
+  episodes: number;
+  files: number;
+  users: number;
+  port: string;
+  cpu: string;
+  goversion: string;
+  gpu: string;
+  uptime: string;
+  ram: number;
+  tasks: AdminTaskData[];
+}
+
+declare interface AdminTaskData {
+  id: number;
+  username: string;
+  started: string;
+  name: string;
+  status: string;
+  finished: string;
+}
 
 export function Landing() {
+  const [adminData, setAdminData] = useState<AdminInfoData | null>(null);
+  useEffect(() => {
+    fetch(`${app_url}/admin/info`, { credentials: "include" })
+      .then((response) => response.json())
+      .then(setAdminData);
+  }, []);
+  if (!adminData) return <div>Loading...</div>;
   return (
     <div>
       <div className="md:flex grid justify-around ml-6 mt-10">
-        <div className="card mt-4 bg-neutral text-neutral-content w-1/2">
+        <div className="card mt-4  text-neutral-content w-1/2">
           <div className="card-body items-center text-center">
             <h2 className="card-title">Server Informations</h2>
             <div className="font-semibold">Version : 1.0</div>
@@ -19,7 +56,9 @@ export function Landing() {
                   >
                     <BsLink45Deg size={30} />
                   </a>
-                  <div className="ml-2 text-lg">http://82.65.99.194:8080</div>
+                  <div className="ml-2 text-lg">
+                    http://82.65.99.194:{adminData.port}
+                  </div>
                 </div>
                 <div className="flex mt-3 items-center">
                   <a
@@ -29,51 +68,54 @@ export function Landing() {
                   >
                     <BsLink45Deg size={30} />
                   </a>
-                  <div className="ml-2 text-lg">http://192.168.100</div>
+                  <div className="ml-2 text-lg">
+                    http://192.168.100:{adminData.port}
+                  </div>
                 </div>
               </div>
+
               <div className="font-semibold block text-left">
-                <div>Web Port : 80</div>
-                <div>CPU : Intel Xeon E52080v2</div>
-                <div>GPU : Nvidia GTX 1060 6go</div>
-                <div>RAM : 64Go</div>
-                <div>Total Storage Size : 10tb</div>
-              </div>
-              <div className="font-semibold block text-left">
-                <div>-</div>
-                <div>(10%)</div>
-                <div>(1%)</div>
-                <div>(64go)</div>
-                <div>(10%)</div>
+                <div>Web Port : {adminData.port}</div>
+                <div>CPU : {adminData.cpu}</div>
+                <div>GPU : Nvidia {adminData.gpu}</div>
+                <div>RAM : {bytesToSize(adminData.ram)}</div>
+                <div>Go Version : {adminData.goversion}</div>
+                <div>Uptime : {adminData.uptime}</div>
               </div>
             </div>
           </div>
         </div>
-        <div className="stats w-1/2">
-          <div className="stat place-items-center">
-            <div className="stat-title">Movies</div>
-            <div className="stat-value text-5xl">1,200</div>
-            <div className="stat-desc">↘︎ 90 (14%)</div>
-          </div>
-          <div className="stat place-items-center">
-            <div className="stat-title">Tv</div>
-            <div className="stat-value text-5xl">40</div>
-            <div className="stat-desc">↘︎ 90 (14%)</div>
-          </div>
-          <div className="stat place-items-center">
-            <div className="stat-title">Files</div>
-            <div className="stat-value text-5xl">40</div>
-            <div className="stat-desc">↘︎ 90 (14%)</div>
-          </div>
-          <div className="stat place-items-center">
-            <div className="stat-title">Users</div>
-            <div className="stat-value text-5xl">{1}</div>
-            <div className="stat-desc">↗︎ 40 (2%)</div>
-          </div>
-          <div className="stat place-items-center">
-            <div className="stat-title">Current Transcode</div>
-            <div className="stat-value text-5xl">{1}</div>
-            <div className="stat-desc">↗︎ 40 (2%)</div>
+        <div className="card mt-4 text-neutral-content w-1/2 bg-transparent">
+          <div className="card-body items-center text-center">
+            <h2 className="card-title">Server Stats</h2>
+            <div className="stats">
+              <div className="stat place-items-center">
+                <div className="stat-title">Movies</div>
+                <div className="stat-value text-5xl">{adminData.movies}</div>
+              </div>
+              <div className="stat place-items-center">
+                <div className="stat-title">Tv</div>
+                <div className="stat-value text-5xl">{adminData.series}</div>
+              </div>
+              <div className="stat place-items-center">
+                <div className="stat-title">Files</div>
+                <div className="stat-value text-5xl">{adminData.files}</div>
+              </div>
+              <div className="stat place-items-center">
+                <div className="stat-title">Users</div>
+                <div className="stat-value text-5xl">{adminData.users}</div>
+              </div>
+              <div className="stat place-items-center">
+                <div className="stat-title">Current Transcode</div>
+                <div className="stat-value text-5xl">
+                  {adminData.currentTranscode}
+                </div>
+              </div>
+              <div className="stat place-items-center">
+                <div className="stat-title">Episodes</div>
+                <div className="stat-value text-5xl">{adminData.episodes}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -90,7 +132,7 @@ export function Landing() {
             </tr>
           </thead>
           <tbody>
-            <tr>
+            {/* <tr>
               <td>1</td>
               <td>
                 <div className="tooltip" data-tip="KOSMIX #1">
@@ -118,7 +160,43 @@ export function Landing() {
                 {new Date().toLocaleDateString()}
                 <div className="badge badge-neutral">Not finished</div>
               </td>
-            </tr>
+            </tr> */}
+            {adminData.tasks.map((task) => (
+              <tr key={task.id}>
+                <td>{task.id}</td>
+                <td>
+                  <div className="tooltip" data-tip={task.username}>
+                    <img
+                      src={profile}
+                      alt="User Profile"
+                      className="w-8 h-8 rounded-full border-2 border-primary"
+                    />
+                  </div>
+                </td>
+                <td>{task.name}</td>
+                <td>{task.started}</td>
+                <th className="flex gap-4">
+                  <div
+                    className={`badge ${
+                      task.status === "Success"
+                        ? "badge-success"
+                        : task.status === "Error"
+                        ? "badge-error"
+                        : "badge-neutral"
+                    }`}
+                  >
+                    {task.status}
+                  </div>
+                </th>
+                <td>
+                  {task.finished ? (
+                    task.finished
+                  ) : (
+                    <div className="badge badge-neutral">Not finished</div>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
             <tr>

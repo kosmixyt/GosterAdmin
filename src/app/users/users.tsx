@@ -6,30 +6,59 @@ import { FaSearch, FaUser } from "react-icons/fa";
 import { IoMdMail } from "react-icons/io";
 import { MdGeneratingTokens, MdOutlinePassword } from "react-icons/md";
 import { CgRename } from "react-icons/cg";
+import { app_url } from "../../main";
+import { toast } from "react-toastify";
 
 export default function Users() {
   const [search, setSearch] = useState("");
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const fetchUsers = () => {
+    fetch(`${app_url}/admin/users`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setUsers(data);
+        setFilteredUsers(data);
+      });
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex justify-center mt-32 text-4xl">Users :</div>
-      <div className="w-full flex justify-center mt-10">
+      <div className="flex justify-center  mt-5">
+        <UserEdition oncreated={fetchUsers} user={DefaultUserData()}>
+          <button className="btn btn-success">Create User</button>
+        </UserEdition>
+      </div>
+      <div className="w-full flex justify-center mt-5">
         <input
           type="text"
           placeholder="Search for a user"
           className="input input-bordered w-1/2 max-w-md"
+          onInput={(e) => {
+            setSearch(e.currentTarget.value);
+            setFilteredUsers(
+              users.filter((user: UserData) =>
+                user.name.toLowerCase().includes(e.currentTarget.value)
+              )
+            );
+          }}
         />
       </div>
       <div className="overflow-x-auto mt-10 p-4 flex-wrap flex gap-6 justify-center">
-        {[1, 2, 3, 4, 5].map((user) => (
+        {filteredUsers.map((user) => (
           <User key={user} user={user} />
         ))}
       </div>
     </motion.div>
   );
 }
-export function User(props: { user: number }) {
+export function User(props: { user: UserData }) {
   return (
-    <UserEdition>
+    <UserEdition user={props.user}>
       <motion.div
         whileHover={{ scale: 1.1 }}
         className="shadow-xl p-4 cursor-pointer"
@@ -40,16 +69,62 @@ export function User(props: { user: number }) {
           </div>
         </div>
         <div className="flex justify-center">
-          <div className="font-bold text-xl">KOSMIX {props.user}</div>
+          <div className="font-bold text-xl">{props.user.name}</div>
           <div className="text-gray-500"></div>
         </div>
       </motion.div>
     </UserEdition>
   );
 }
-export function UserEdition(props: { children: React.ReactNode }) {
-  const [canUpload, setCanUpload] = useState(false);
-  const [transcode, setTranscode] = useState(false);
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  token: string;
+  admin: boolean;
+  can_download: boolean;
+  can_convert: boolean;
+  can_add_files: boolean;
+  can_upload: boolean;
+  can_delete: boolean;
+  can_edit: boolean;
+  can_transcode: boolean;
+  max_transcoding: number;
+  allowed_upload_number: number;
+  allowed_upload_size: number;
+}
+function DefaultUserData(): UserData {
+  return {
+    id: 0,
+    name: "",
+    email: "",
+    token: "",
+    admin: false,
+    can_download: false,
+    can_convert: false,
+    can_add_files: false,
+    can_upload: false,
+    can_delete: false,
+    can_edit: false,
+    allowed_upload_number: 0,
+    allowed_upload_size: 0,
+    can_transcode: true,
+    max_transcoding: 100,
+  };
+}
+export function UserEdition(
+  props: {
+    children: React.ReactNode;
+    user: UserData;
+    oncreated?: (user: UserData) => void;
+  } = {
+    children: null,
+    user: DefaultUserData(),
+  }
+) {
+  // const [canUpload, setCanUpload] = useState(false);
+  // const [transcode, setTranscode] = useState(false);
+  const [user, setUser] = useState(props.user);
   const [open, setOpen] = useState(false);
   if (!open) {
     return (
@@ -93,6 +168,10 @@ export function UserEdition(props: { children: React.ReactNode }) {
                       <label className="input input-bordered flex items-center gap-2">
                         <CgRename />
                         <input
+                          onInput={(e) =>
+                            setUser({ ...user, name: e.currentTarget.value })
+                          }
+                          value={user.name}
                           type="text"
                           className="grow"
                           placeholder="UserName"
@@ -101,6 +180,10 @@ export function UserEdition(props: { children: React.ReactNode }) {
                       <label className="input input-bordered flex items-center gap-2">
                         <IoMdMail />
                         <input
+                          onInput={(e) =>
+                            setUser({ ...user, email: e.currentTarget.value })
+                          }
+                          value={user.email}
                           type="text"
                           className="grow"
                           placeholder="Email"
@@ -111,6 +194,10 @@ export function UserEdition(props: { children: React.ReactNode }) {
                         <input
                           type="password"
                           className="grow"
+                          value={user.token}
+                          onInput={(e) =>
+                            setUser({ ...user, token: e.currentTarget.value })
+                          }
                           placeholder="Token"
                         />
                       </label>
@@ -118,9 +205,15 @@ export function UserEdition(props: { children: React.ReactNode }) {
                         <label className="label cursor-pointer">
                           <span className="label-text text-error">Admin</span>
                           <input
+                            checked={user.admin}
+                            onChange={(e) =>
+                              setUser({
+                                ...user,
+                                admin: e.currentTarget.checked,
+                              })
+                            }
                             type="checkbox"
                             className="toggle toggle-error"
-                            defaultChecked
                           />
                         </label>
                         <div
@@ -132,22 +225,15 @@ export function UserEdition(props: { children: React.ReactNode }) {
                               Can Delete Files
                             </span>
                             <input
+                              checked={user.can_delete}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_delete: e.currentTarget.checked,
+                                })
+                              }
                               type="checkbox"
                               className="toggle toggle-error"
-                              defaultChecked
-                            />
-                          </label>
-                        </div>
-                        <div
-                          className="tooltip"
-                          data-tip="does the user can download media from the server ?"
-                        >
-                          <label className="label cursor-pointer">
-                            <span className="label-text">Can Download</span>
-                            <input
-                              type="checkbox"
-                              className="toggle "
-                              defaultChecked
                             />
                           </label>
                         </div>
@@ -160,13 +246,18 @@ export function UserEdition(props: { children: React.ReactNode }) {
                             <input
                               type="checkbox"
                               className="toggle "
-                              defaultChecked={canUpload}
-                              onChange={() => setCanUpload(!canUpload)}
+                              checked={user.can_upload}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_upload: e.currentTarget.checked,
+                                })
+                              }
                             />
                           </label>
                         </div>
                         <AnimatePresence>
-                          {canUpload && (
+                          {user.can_upload && (
                             <motion.div
                               initial={{
                                 height: 0,
@@ -191,9 +282,15 @@ export function UserEdition(props: { children: React.ReactNode }) {
                                     Can Add File
                                   </span>
                                   <input
+                                    checked={user.can_add_files}
+                                    onChange={(e) =>
+                                      setUser({
+                                        ...user,
+                                        can_add_files: e.currentTarget.checked,
+                                      })
+                                    }
                                     type="checkbox"
                                     className="toggle "
-                                    defaultChecked
                                   />
                                 </label>
                               </div>
@@ -206,6 +303,14 @@ export function UserEdition(props: { children: React.ReactNode }) {
                                     Allowed Upload Numer
                                   </span>
                                   <input
+                                    value={user.allowed_upload_number}
+                                    onInput={(e) =>
+                                      setUser({
+                                        ...user,
+                                        allowed_upload_number:
+                                          +e.currentTarget.value,
+                                      })
+                                    }
                                     type="number"
                                     defaultValue={1}
                                     className="input input-bordered w-28 h-7 max-w-xs text-right"
@@ -221,6 +326,14 @@ export function UserEdition(props: { children: React.ReactNode }) {
                                     Allowed Upload Size
                                   </span>
                                   <input
+                                    value={user.allowed_upload_size}
+                                    onInput={(e) =>
+                                      setUser({
+                                        ...user,
+                                        allowed_upload_size:
+                                          +e.currentTarget.value,
+                                      })
+                                    }
                                     type="number"
                                     defaultValue={1}
                                     className="input input-bordered w-28 h-7 max-w-xs text-right"
@@ -237,9 +350,15 @@ export function UserEdition(props: { children: React.ReactNode }) {
                           <label className="label cursor-pointer">
                             <span className="label-text">Can Convert</span>
                             <input
+                              checked={user.can_convert}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_convert: e.currentTarget.checked,
+                                })
+                              }
                               type="checkbox"
                               className="toggle "
-                              defaultChecked
                             />
                           </label>
                         </div>
@@ -250,9 +369,15 @@ export function UserEdition(props: { children: React.ReactNode }) {
                           <label className="label cursor-pointer">
                             <span className="label-text">Can Download</span>
                             <input
+                              checked={user.can_download}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_download: e.currentTarget.checked,
+                                })
+                              }
                               type="checkbox"
                               className="toggle "
-                              defaultChecked
                             />
                           </label>
                         </div>
@@ -265,13 +390,18 @@ export function UserEdition(props: { children: React.ReactNode }) {
                             <input
                               type="checkbox"
                               className="toggle "
-                              defaultChecked={transcode}
-                              onChange={() => setTranscode(!transcode)}
+                              value={user.can_transcode}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_transcode: e.currentTarget.checked,
+                                })
+                              }
                             />
                           </label>
                         </div>
                         <AnimatePresence>
-                          {transcode && (
+                          {user.can_transcode && (
                             <motion.div
                               initial={{
                                 height: 0,
@@ -311,6 +441,13 @@ export function UserEdition(props: { children: React.ReactNode }) {
                                     Total Max Transcode
                                   </span>
                                   <input
+                                    value={user.max_transcoding}
+                                    onInput={(e) =>
+                                      setUser({
+                                        ...user,
+                                        max_transcoding: +e.currentTarget.value,
+                                      })
+                                    }
                                     type="number"
                                     defaultValue={1}
                                     className="input input-bordered w-28 h-7 max-w-xs text-right"
@@ -329,18 +466,57 @@ export function UserEdition(props: { children: React.ReactNode }) {
                               Can Edit Metadata
                             </span>
                             <input
+                              checked={user.can_edit}
+                              onChange={(e) =>
+                                setUser({
+                                  ...user,
+                                  can_edit: e.currentTarget.checked,
+                                })
+                              }
                               type="checkbox"
                               className="toggle "
-                              defaultChecked
                             />
                           </label>
                         </div>
                       </div>
-                      <button className="btn btn-error w-full">
+                      <button
+                        onClick={() => {
+                          DeleteUser(user.id).then((res) => {
+                            if (res.message) {
+                              if (props.oncreated) {
+                                props.oncreated(user);
+                              }
+                              toast.success(res.message);
+                              setOpen(false);
+                            } else {
+                              toast.error(res.error);
+                            }
+                          });
+                        }}
+                        className="btn btn-error w-full"
+                      >
                         Delete User
                       </button>
                       <div className="w-full flex justify-center gap-4">
-                        <button className="btn btn-success w-1/2">Save</button>
+                        <button
+                          onClick={() => {
+                            UpdateUser(user).then((res) => {
+                              if (res.message) {
+                                if (props.oncreated) {
+                                  props.oncreated(user);
+                                }
+
+                                toast.success(res.message);
+                                setOpen(false);
+                              } else {
+                                toast.error("User Update Failed");
+                              }
+                            });
+                          }}
+                          className="btn btn-success w-1/2"
+                        >
+                          Save
+                        </button>
                         <button
                           onClick={() => setOpen(false)}
                           className="btn btn-neutral w-1/2"
@@ -359,4 +535,24 @@ export function UserEdition(props: { children: React.ReactNode }) {
       )}
     </>
   );
+}
+
+export async function UpdateUser(userData: UserData) {
+  const res = await fetch(`${app_url}/admin/user/update`, {
+    method: "POST",
+    credentials: "include",
+    body: JSON.stringify(userData),
+  });
+  return res.json();
+}
+
+export async function DeleteUser(id: number) {
+  const form = new FormData();
+  form.append("id", id.toString());
+  const res = await fetch(`${app_url}/admin/user/delete`, {
+    method: "POST",
+    credentials: "include",
+    body: form,
+  });
+  return res.json();
 }
